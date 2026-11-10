@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>License Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b10; --window: #0a0f16; --side: #0b1118; --card: #111923; --card-hover: #16202c; --row-hover: rgba(255,255,255,.025);
+    --line: rgba(255,255,255,.07); --line-strong: rgba(255,255,255,.12); --field: rgba(255,255,255,.04);
+    --text: #e8f1f8; --soft: #b9c6d2; --muted: #9aa8b6; --dim: #7c8a99; --faint: #4b5866;
+    --aqua: #5fe3ff; --on-aqua: #06202a; --ok: #7cf0c0; --warn: #ffc56b; --bad: #ff6b6b; --bad-text: #ff9a9a;
+    --ease: cubic-bezier(.2,.8,.2,1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.45 Outfit, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  button, input, select { font: inherit; color: inherit; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .92em; letter-spacing: .02em; }
+  .hidden { display: none !important; }
+  .muted { color: var(--dim); }
+  .faint { color: var(--faint); }
+
+  /* ---------- prvky ---------- */
+  label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+  input[type=text], input[type=password], input[type=number], input[type=date], select {
+    width: 100%; height: 40px; padding: 0 12px; border-radius: 10px; background: var(--field);
+    border: 1px solid var(--line-strong); outline: none; transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  input:focus, select:focus { border-color: rgba(95,227,255,.55); background: rgba(95,227,255,.05); box-shadow: 0 0 0 4px rgba(95,227,255,.08); }
+  select option { background: #0d131c; }
+  .btn {
+    height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.06); cursor: pointer; font-weight: 500; white-space: nowrap; justify-content: center;
+    transition: background .18s, border-color .18s, transform .08s, opacity .18s;
+  }
+  .btn:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.primary { background: var(--aqua); color: var(--on-aqua); border-color: rgba(191,246,255,.5); font-weight: 600; }
+  .btn.primary:hover { background: #8bebff; }
+  .btn.danger { background: rgba(255,107,107,.1); border-color: rgba(255,107,107,.35); color: var(--bad-text); }
+  .btn.danger:hover { background: rgba(255,107,107,.18); }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--dim); }
+  .btn.ghost:hover { color: var(--text); background: rgba(255,255,255,.06); }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 13px; border-radius: 8px; }
+  .link { border: 0; background: none; padding: 2px 6px; border-radius: 6px; color: var(--dim); cursor: pointer; font-size: 13px; }
+  .link:hover { color: var(--aqua); background: rgba(95,227,255,.08); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 99px; font-size: 12px; font-weight: 500; border: 1px solid; }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill.active { color: var(--ok); border-color: rgba(124,240,192,.3); background: rgba(124,240,192,.07); }
+  .pill.revoked { color: var(--bad-text); border-color: rgba(255,107,107,.3); background: rgba(255,107,107,.07); }
+  .pill.expired { color: var(--warn); border-color: rgba(255,197,107,.3); background: rgba(255,197,107,.07); }
+  .slots { display: inline-flex; gap: 3px; align-items: center; vertical-align: middle; }
+  .slot { width: 12px; height: 7px; border-radius: 3px; background: rgba(255,255,255,.1); }
+  .slot.used { background: var(--aqua); box-shadow: 0 0 6px rgba(95,227,255,.35); }
+  .avatar { width: 30px; height: 30px; border-radius: 8px; flex: none; display: grid; place-items: center; font-weight: 600; font-size: 13px;
+    color: var(--on-aqua); background: linear-gradient(145deg, #5fe3ff, #1b7f9e); }
+  .avatar.idle { background: rgba(255,255,255,.08); color: var(--dim); }
+  .logo { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex: none;
+    background: linear-gradient(145deg, #5fe3ff, #1b7f9e); box-shadow: 0 6px 20px rgba(95,227,255,.22); }
+  .logo svg { width: 20px; height: 20px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .spin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(6,32,42,.3); border-top-color: var(--on-aqua); animation: sp .7s linear infinite; }
+
+  /* ---------- login ---------- */
+  .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+    background: radial-gradient(900px 500px at 50% -10%, rgba(95,227,255,.09), transparent 60%); }
+  .login { width: min(390px, 100%); background: var(--window); border: 1px solid var(--line-strong); border-radius: 18px; padding: 28px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07); animation: rise .45s var(--ease); }
+  .login .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .login h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .login p { color: var(--dim); font-size: 14px; margin: 0 0 20px; }
+  .pwfield { position: relative; }
+  .pwfield input { height: 44px; padding-right: 64px; }
+  .pwfield .link { position: absolute; right: 6px; top: 9px; }
+  .login .btn.primary { width: 100%; height: 44px; margin-top: 16px; }
+  .err { min-height: 20px; margin-top: 10px; font-size: 13px; color: var(--bad-text); }
+  .note { color: var(--faint); font-size: 12px; margin-top: 14px; }
+
+  /* ---------- rozložení ---------- */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+  .side { background: var(--side); border-right: 1px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 4px;
+    position: sticky; top: 0; height: 100vh; }
+  .side .brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 20px; }
+  .side .brand b { display: block; font-weight: 600; font-size: 15px; }
+  .side .brand small { color: var(--dim); font-size: 12px; }
+  .nav { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid transparent;
+    background: none; color: var(--muted); cursor: pointer; text-align: left; transition: .18s; }
+  .nav:hover { color: var(--text); background: rgba(255,255,255,.04); }
+  .nav.on { color: var(--text); background: linear-gradient(90deg, rgba(95,227,255,.16), rgba(95,227,255,.04)); border-color: rgba(95,227,255,.25); }
+  .nav svg { width: 18px; height: 18px; flex: none; opacity: .8; }
+  .nav.on svg { color: var(--aqua); opacity: 1; }
+  .nav .count { margin-left: auto; font-size: 12px; color: var(--faint); }
+  .nav.on .count { color: var(--aqua); }
+  .side .grow { flex: 1; }
+  .main { padding: 26px 32px 60px; min-width: 0; }
+  .page { animation: rise .35s var(--ease); max-width: 1100px; }
+  .page-head { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 20px; }
+  .page-head h1 { font-size: 26px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  .page-head p { margin: 2px 0 0; color: var(--dim); font-size: 14px; }
+  .page-head .grow { flex: 1; }
+
+  /* ---------- přehled ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line-strong); border-radius: 14px; padding: 16px; }
+  .stat small { color: var(--dim); font-size: 13px; }
+  .stat b { display: block; font-size: 28px; font-weight: 600; line-height: 1.2; margin-top: 4px; }
+  .stat span { font-size: 12px; color: var(--faint); }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .box { background: var(--window); border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; }
+  .box-head { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .box-head h2 { font-size: 15px; font-weight: 600; margin: 0; flex: 1; }
+  .mini { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .15s; }
+  .mini:last-child { border-bottom: 0; }
+  .mini:hover { background: var(--row-hover); }
+  .mini .t { flex: 1; min-width: 0; }
+  .mini b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini small { color: var(--dim); font-size: 12px; }
+  .empty-mini { padding: 26px 16px; color: var(--faint); text-align: center; font-size: 14px; }
+
+  /* ---------- tabulky ---------- */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+  .search { position: relative; flex: 1; }
+  .search input { padding-left: 36px; }
+  .search svg { position: absolute; left: 12px; top: 12px; width: 16px; height: 16px; color: var(--faint); }
+  .seg { display: flex; background: var(--field); border: 1px solid var(--line-strong); border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: transparent; padding: 0 12px; border-radius: 7px; cursor: pointer; color: var(--dim); height: 32px; transition: .18s; font-size: 14px; }
+  .seg button.on { background: rgba(95,227,255,.15); color: var(--aqua); }
+  .seg button:hover:not(.on) { color: var(--text); }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  thead th { text-align: left; font-weight: 500; font-size: 12px; color: var(--faint); text-transform: uppercase; letter-spacing: .06em;
+    padding: 10px 14px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.015); white-space: nowrap; }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr.click { cursor: pointer; transition: background .15s; }
+  tbody tr.click:hover { background: var(--row-hover); }
+  tbody tr.sel { background: rgba(95,227,255,.05); }
+  td .sub { display: block; color: var(--dim); font-size: 12px; }
+  td.right, th.right { text-align: right; }
+  .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .who b { font-weight: 500; }
+  .keycell { white-space: nowrap; }
+  .masked { color: var(--dim); }
+  .table-empty { padding: 40px 0; text-align: center; color: var(--dim); }
+
+  /* ---------- panel s detailem ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(3,6,10,.55); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 10; }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(460px, 100vw); background: var(--window); border-left: 1px solid var(--line-strong);
+    transform: translateX(100%); transition: transform .32s var(--ease); z-index: 11; display: flex; flex-direction: column; box-shadow: -30px 0 80px rgba(0,0,0,.45); }
+  .drawer.show { transform: none; }
+  .drawer-head { padding: 20px 22px 16px; border-bottom: 1px solid var(--line); }
+  .drawer-head .top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .drawer-head .top .grow { flex: 1; }
+  .bigkey { font-family: "JetBrains Mono", monospace; font-size: 20px; letter-spacing: .04em; display: flex; align-items: center; gap: 10px; }
+  .drawer-body { padding: 18px 22px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 22px; }
+  .section h3 { font-size: 13px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 10px; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fact { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .fact small { display: block; color: var(--dim); font-size: 12px; }
+  .pc { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+  .pc .t { flex: 1; min-width: 0; }
+  .pc small { display: block; color: var(--dim); font-size: 12px; }
+  .pc.free { border-style: dashed; color: var(--faint); justify-content: center; }
+  .form2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form2 .full { grid-column: 1 / -1; }
+  .drawer-foot { padding: 14px 22px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; }
+  .drawer-foot .grow { flex: 1; }
+
+  /* ---------- modal ---------- */
+  .modal { position: fixed; left: 50%; top: 50%; width: min(480px, calc(100vw - 32px)); background: var(--window); border: 1px solid var(--line-strong);
+    border-radius: 16px; z-index: 12; transform: translate(-50%, -46%) scale(.98); opacity: 0; pointer-events: none; transition: .25s var(--ease);
+    box-shadow: 0 30px 90px rgba(0,0,0,.6); }
+  .modal.show { transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; }
+  .modal-head { display: flex; align-items: center; padding: 18px 20px 6px; }
+  .modal-head h2 { margin: 0; font-size: 19px; font-weight: 600; flex: 1; }
+  .modal-body { padding: 10px 20px 20px; }
+  .modal-body .form2 { margin-bottom: 4px; }
+  .newkeys { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 14px; }
+  .newkey { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(124,240,192,.07);
+    border: 1px solid rgba(124,240,192,.3); animation: rise .3s ease; }
+  .newkey .mono { flex: 1; color: var(--ok); font-size: 16px; }
+  .modal-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 0 20px 20px; }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); opacity: 0; z-index: 20;
+    background: #121a24; border: 1px solid rgba(95,227,255,.35); padding: 10px 16px; border-radius: 10px;
+    transition: opacity .2s, transform .25s var(--ease); pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; padding: 12px; gap: 6px; border-right: 0; border-bottom: 1px solid var(--line); }
+    .side .brand { padding: 0 8px 0 4px; width: 100%; }
+    .side .grow { display: none; }
+    .nav { height: 36px; padding: 0 10px; }
+    .nav .count { display: none; }
+    .main { padding: 18px 16px 50px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .cols { grid-template-columns: 1fr; }
+    .hide-md { display: none; }
+    .toolbar { flex-wrap: wrap; }
+    .search { flex-basis: 100%; }
+    .box { overflow-x: auto; }
+    .keycell .link[data-copy] { display: none; }
+    thead th, tbody td { padding-left: 10px; padding-right: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="#06202a" stroke-width="2" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12M21 7l-9 5-9-5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h10"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
+<!-- ======================= login ======================= -->
+<div class="login-wrap" id="loginView">
+  <form class="login" id="loginForm" autocomplete="off">
+    <div class="brand">
+      <div class="logo"><svg><use href="#i-logo"/></svg></div>
+      <div><b>Pong's Automatization</b><br><small class="muted">License admin</small></div>
+    </div>
+    <h1>Admin log in</h1>
+    <p>5 wrong tries lock the login for 15 minutes.</p>
+    <label for="pw">Admin password</label>
+    <div class="pwfield">
+      <input id="pw" type="password" class="mono" placeholder="xxxxx-xxxxx-xxxxx-xxxxx-xxxxx" autofocus>
+      <button type="button" class="link" id="eye">Show</button>
+    </div>
+    <button class="btn primary" id="loginBtn" type="submit">Log in</button>
+    <div class="err" id="loginMsg"></div>
+    <div class="note">Session lasts 8 hours. The password is checked on the server.</div>
+  </form>
+</div>
+
+<!-- ======================= aplikace ======================= -->
+<div class="shell hidden" id="appView">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg><use href="#i-logo"/></svg></div>
+      <div><b>Licenses</b><small>Pong's Automatization</small></div>
+    </div>
+    <button class="nav on" data-page="overview"><svg><use href="#i-home"/></svg>Overview</button>
+    <button class="nav" data-page="keys"><svg><use href="#i-key"/></svg>Keys<span class="count" id="nKeys"></span></button>
+    <button class="nav" data-page="users"><svg><use href="#i-users"/></svg>Users &amp; PCs<span class="count" id="nPcs"></span></button>
+    <div class="grow"></div>
+    <button class="nav" id="logoutBtn"><svg><use href="#i-out"/></svg>Log out</button>
+  </aside>
+
+  <main class="main">
+    <!-- přehled -->
+    <section class="page" id="page-overview">
+      <div class="page-head">
+        <div><h1>Overview</h1><p>Everything at a glance</p></div>
+        <div class="grow"></div>
+        <button class="btn primary" data-open="create"><svg width="16" height="16"><use href="#i-plus"/></svg>New key</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><small>Keys</small><b id="sKeys">–</b><span id="sKeysSub"></span></div>
+        <div class="stat"><small>Active</small><b id="sActive">–</b><span id="sActiveSub"></span></div>
+        <div class="stat"><small>PCs in use</small><b id="sPcs">–</b><span id="sPcsSub"></span></div>
+        <div class="stat"><small>Expiring in 7 days</small><b id="sSoon">–</b><span id="sSoonSub"></span></div>
+      </div>
+      <div class="cols">
+        <div class="box">
+          <div class="box-head"><h2>Recently online</h2><button class="link" data-goto="users">All PCs →</button></div>
+          <div id="recentPcs"></div>
+        </div>
+        <div class="box">
+          <div class="box-head"><h2>Newest keys</h2><button class="link" data-goto="keys">All keys →</button></div>
+          <div id="recentKeys"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- klíče -->
+    <section class="page hidden" id="page-keys">
+      <div class="page-head">
+        <div><h1>Keys</h1><p>One row per key – click a row for details, PCs and editing</p></div>
+        <div class="grow"></div>
+        <button class="btn primary" data-open="create"><svg width="16" height="16"><use href="#i-plus"/></svg>New key</button>
+      </div>
+      <div class="toolbar">
+        <div class="search"><svg><use href="#i-search"/></svg><input type="text" id="keySearch" placeholder="Search key, owner or note…"></div>
+        <div class="seg" id="keyFilter">
+          <button data-f="all" class="on">All</button><button data-f="active">Active</button>
+          <button data-f="revoked">Revoked</button><button data-f="expired">Expired</button>
+        </div>
+      </div>
+      <div class="box">
+        <table>
+          <thead><tr><th>Key</th><th>Owner</th><th>Status</th><th>PCs</th><th class="hide-md">Expires</th><th class="hide-md">Created</th></tr></thead>
+          <tbody id="keyRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- uživatelé -->
+    <section class="page hidden" id="page-users">
+      <div class="page-head">
+        <div><h1>Users &amp; PCs</h1><p>Every activated PC with its owner and license key</p></div>
+        <div class="grow"></div>
+        <button class="btn" id="revealAll">Show all keys</button>
+      </div>
+      <div class="toolbar">
+        <div class="search"><svg><use href="#i-search"/></svg><input type="text" id="userSearch" placeholder="Search owner, HWID or key…"></div>
+        <div class="seg" id="userFilter">
+          <button data-f="all" class="on">All</button><button data-f="online">Online today</button><button data-f="waiting">Not activated</button>
+        </div>
+      </div>
+      <div class="box">
+        <table>
+          <thead><tr><th>User</th><th class="hide-md">PC (HWID)</th><th>License key</th><th class="hide-md">Status</th><th class="hide-md">Last seen</th><th></th></tr></thead>
+          <tbody id="userRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- detail klíče -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div class="top"><span id="dStatus"></span><div class="grow"></div><button class="btn ghost sm" data-close><svg width="16" height="16"><use href="#i-x"/></svg></button></div>
+    <div class="bigkey"><span id="dKey"></span><button class="link" id="dCopy">Copy</button></div>
+  </div>
+  <div class="drawer-body">
+    <div class="section">
+      <div class="facts">
+        <div class="fact"><small>Owner</small><span id="dOwner"></span></div>
+        <div class="fact"><small>Expires</small><span id="dExp"></span></div>
+        <div class="fact"><small>PCs</small><span id="dSlots"></span></div>
+        <div class="fact"><small>Created</small><span id="dCreated"></span></div>
+      </div>
+    </div>
+    <div class="section"><h3>Activated PCs</h3><div id="dPcs"></div></div>
+    <div class="section">
+      <h3>Edit</h3>
+      <div class="form2">
+        <div><label>Owner</label><input type="text" id="eOwner" maxlength="80"></div>
+        <div><label>PCs allowed</label><input type="number" id="eMax" min="1" max="20"></div>
+        <div><label>Expires (empty = forever)</label><input type="date" id="eExp"></div>
+        <div><label>Note</label><input type="text" id="eNote" maxlength="300"></div>
+      </div>
+      <button class="btn primary sm" id="eSave" style="margin-top:12px">Save changes</button>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn sm" id="dRevoke">Revoke key</button>
+    <button class="btn sm" id="dReset">Free all PCs</button>
+    <div class="grow"></div>
+    <button class="btn danger sm" id="dDelete">Delete key</button>
+  </div>
+</aside>
+
+<!-- nový klíč -->
+<div class="modal" id="createModal" role="dialog" aria-modal="true">
+  <div class="modal-head"><h2>New key</h2><button class="btn ghost sm" data-close><svg width="16" height="16"><use href="#i-x"/></svg></button></div>
+  <form id="createForm">
+    <div class="modal-body">
+      <div id="createFields" class="form2">
+        <div class="full"><label>Owner / buyer</label><input type="text" id="cOwner" placeholder="e.g. Discord name" maxlength="80"></div>
+        <div><label>PCs per key</label><input type="number" id="cMax" value="2" min="1" max="20"></div>
+        <div><label>Duration</label>
+          <select id="cDays"><option value="">Forever</option><option value="7">7 days</option><option value="30">30 days</option>
+            <option value="90">90 days</option><option value="365">1 year</option></select></div>
+        <div><label>How many keys</label><input type="number" id="cCount" value="1" min="1" max="50"></div>
+        <div><label>Note</label><input type="text" id="cNote" placeholder="optional" maxlength="300"></div>
+      </div>
+      <div id="createResult" class="hidden">
+        <p class="muted" style="margin:0 0 10px">Done – copy the key and send it to the buyer.</p>
+        <div class="newkeys" id="newKeys"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" id="createAnother" data-close>Cancel</button>
+      <button type="submit" class="btn primary" id="createBtn">Create key</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = "https://btkvovnxbcqkbrjrvkbt.supabase.co/functions/v1/admin";
+const $ = (id) => document.getElementById(id);
+let token = null;
+try { token = sessionStorage.getItem("pa_admin_token"); } catch (e) {}
+let licenses = [], page = "overview", keyFilter = "all", userFilter = "all", current = null, revealAll = false;
+const revealed = new Set();
+
+// ------------------------------------------------------------------ pomocné
+async function api(action, body = {}) {
+  const res = await fetch(API + "/" + action, {
+    method: "POST",
+    headers: Object.assign({ "Content-Type": "application/json" }, token ? { "x-admin-token": token } : {}),
+    body: JSON.stringify(body),
+  });
+  let data;
+  try { data = await res.json(); } catch (e) { data = { ok: false, message: "Server error" }; }
+  if (res.status === 401 && action !== "login") { logout(true); throw new Error(data.message); }
+  return data;
+}
+function toast(text) {
+  const t = $("toast");
+  t.textContent = text;
+  t.classList.add("show");
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.classList.remove("show"), 1800);
+}
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast("Copied"); } catch (e) { prompt("Copy:", text); }
+}
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+function ago(d) {
+  if (!d) return "never";
+  const s = (Date.now() - new Date(d)) / 1000;
+  if (s < 90) return "just now";
+  if (s < 3600) return Math.round(s / 60) + " min ago";
+  if (s < 86400) return Math.round(s / 3600) + " h ago";
+  if (s < 86400 * 30) return Math.round(s / 86400) + " days ago";
+  return fmtDate(d);
+}
+const status = (l) => l.revoked ? "revoked" : (l.expires_at && new Date(l.expires_at) < new Date()) ? "expired" : "active";
+const pill = (st) => `<span class="pill ${st}">${st[0].toUpperCase() + st.slice(1)}</span>`;
+const slots = (l) => `<span class="slots">${Array.from({ length: l.max_devices }, (_, i) => `<span class="slot ${i < l.devices.length ? "used" : ""}"></span>`).join("")}</span>`;
+const mask = (k) => { const p = String(k).split("-"); return p.length === 4 ? `${p[0]}-••••-••••-${p[3]}` : "••••"; };
+const initial = (s) => esc((s || "?").trim().charAt(0).toUpperCase() || "?");
+const lastSeen = (l) => l.devices.reduce((m, d) => Math.max(m, +new Date(d.last_seen)), 0);
+const expText = (l) => !l.expires_at ? "Forever" : (status(l) === "expired" ? "Ended " : "") + fmtDate(l.expires_at);
+
+// ------------------------------------------------------------------ přihlášení
+$("eye").onclick = () => {
+  const p = $("pw");
+  p.type = p.type === "password" ? "text" : "password";
+  $("eye").textContent = p.type === "password" ? "Show" : "Hide";
+};
+$("loginForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const pw = $("pw").value;
+  if (!pw) return;
+  const b = $("loginBtn");
+  b.disabled = true;
+  b.innerHTML = '<span class="spin"></span>';
+  $("loginMsg").textContent = "";
+  try {
+    const r = await api("login", { password: pw });
+    if (r.ok) {
+      token = r.token;
+      try { sessionStorage.setItem("pa_admin_token", token); } catch (e) {}
+      $("pw").value = "";
+      showApp();
+    } else {
+      $("loginMsg").textContent = r.message || "Wrong password";
+      $("pw").select();
+    }
+  } catch (err) {
+    $("loginMsg").textContent = "Can't reach the server";
+  } finally {
+    b.disabled = false;
+    b.textContent = "Log in";
+  }
+};
+function logout(expired) {
+  if (token && !expired) api("logout").catch(() => {});
+  token = null;
+  try { sessionStorage.removeItem("pa_admin_token"); } catch (e) {}
+  closeAll();
+  $("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  $("loginMsg").textContent = expired ? "Session expired – log in again" : "";
+  $("pw").focus();
+}
+$("logoutBtn").onclick = () => logout(false);
+function showApp() {
+  $("loginView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+  load();
+}
+
+// ------------------------------------------------------------------ data
+async function load() {
+  try {
+    const r = await api("list");
+    if (!r.ok) return toast(r.message || "Couldn't load");
+    licenses = r.licenses || [];
+    renderAll();
+    if (current) {
+      const l = licenses.find((x) => x.key === current);
+      if (l) fillDrawer(l); else closeAll();
+    }
+  } catch (e) { /* odhlášeno */ }
+}
+
+// ------------------------------------------------------------------ navigace
+function go(p) {
+  page = p;
+  document.querySelectorAll(".nav[data-page]").forEach((n) => n.classList.toggle("on", n.dataset.page === p));
+  document.querySelectorAll(".page").forEach((s) => s.classList.toggle("hidden", s.id !== "page-" + p));
+  renderAll();
+}
+document.querySelectorAll(".nav[data-page]").forEach((n) => n.onclick = () => go(n.dataset.page));
+
+// ------------------------------------------------------------------ vykreslení
+function renderAll() {
+  const pcs = licenses.reduce((n, l) => n + l.devices.length, 0);
+  $("nKeys").textContent = licenses.length || "";
+  $("nPcs").textContent = pcs || "";
+  if (page === "overview") renderOverview(pcs);
+  if (page === "keys") renderKeys();
+  if (page === "users") renderUsers();
+}
+
+function renderOverview(pcs) {
+  const active = licenses.filter((l) => status(l) === "active");
+  const soon = active.filter((l) => l.expires_at && new Date(l.expires_at) - Date.now() < 7 * 864e5);
+  const today = licenses.reduce((n, l) => n + l.devices.filter((d) => Date.now() - new Date(d.last_seen) < 864e5).length, 0);
+  const cap = active.reduce((n, l) => n + l.max_devices, 0);
+  $("sKeys").textContent = licenses.length;
+  $("sKeysSub").textContent = `${licenses.length - active.length} revoked or expired`;
+  $("sActive").textContent = active.length;
+  $("sActiveSub").textContent = `${active.filter((l) => !l.devices.length).length} not activated yet`;
+  $("sPcs").textContent = pcs;
+  $("sPcsSub").textContent = `${today} online today · ${cap} slots`;
+  $("sSoon").textContent = soon.length;
+  $("sSoonSub").textContent = soon.length ? soon.map((l) => l.owner || mask(l.key)).slice(0, 2).join(", ") : "nothing to renew";
+
+  const devs = [];
+  licenses.forEach((l) => l.devices.forEach((d) => devs.push({ l, d })));
+  devs.sort((a, b) => new Date(b.d.last_seen) - new Date(a.d.last_seen));
+  $("recentPcs").innerHTML = devs.length ? devs.slice(0, 6).map(({ l, d }) => `
+    <div class="mini" data-key="${esc(l.key)}">
+      <div class="avatar">${initial(l.owner)}</div>
+      <div class="t"><b>${esc(l.owner || "Unknown user")}</b><small class="mono">${esc(d.hwid)}</small></div>
+      <small class="muted">${ago(d.last_seen)}</small>
+    </div>`).join("") : `<div class="empty-mini">No PC has activated a key yet</div>`;
+
+  const keys = [...licenses].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 6);
+  $("recentKeys").innerHTML = keys.length ? keys.map((l) => `
+    <div class="mini" data-key="${esc(l.key)}">
+      <div class="t"><b class="mono">${esc(l.key)}</b><small>${esc(l.owner || "no owner")} · ${fmtDate(l.created_at)}</small></div>
+      ${slots(l)} ${pill(status(l))}
+    </div>`).join("") : `<div class="empty-mini">No keys yet – click “New key”</div>`;
+}
+
+function renderKeys() {
+  const q = $("keySearch").value.trim().toLowerCase();
+  const rows = licenses.filter((l) => (keyFilter === "all" || status(l) === keyFilter)
+      && (!q || [l.key, l.owner, l.note].join(" ").toLowerCase().includes(q)));
+  $("keyRows").innerHTML = rows.length ? rows.map((l) => `
+    <tr class="click ${current === l.key ? "sel" : ""}" data-key="${esc(l.key)}">
+      <td class="keycell"><span class="mono">${esc(l.key)}</span> <button class="link" data-copy="${esc(l.key)}">Copy</button></td>
+      <td>${l.owner ? esc(l.owner) : '<span class="faint">–</span>'}${l.note ? `<span class="sub">${esc(l.note)}</span>` : ""}</td>
+      <td>${pill(status(l))}</td>
+      <td>${slots(l)} <span class="muted">${l.devices.length}/${l.max_devices}</span></td>
+      <td class="hide-md muted">${expText(l)}</td>
+      <td class="hide-md muted">${fmtDate(l.created_at)}</td>
+    </tr>`).join("") : `<tr><td colspan="6" class="table-empty">${licenses.length ? "Nothing matches" : "No keys yet – click “New key”"}</td></tr>`;
+}
+
+function renderUsers() {
+  const q = $("userSearch").value.trim().toLowerCase();
+  let rows = [];
+  licenses.forEach((l) => {
+    if (l.devices.length) l.devices.forEach((d, i) => rows.push({ l, d, n: i + 1 }));
+    else rows.push({ l, d: null, n: 0 });
+  });
+  rows = rows.filter(({ l, d }) => {
+    if (userFilter === "online" && !(d && Date.now() - new Date(d.last_seen) < 864e5)) return false;
+    if (userFilter === "waiting" && d) return false;
+    return !q || [l.owner, l.key, d ? d.hwid : ""].join(" ").toLowerCase().includes(q);
+  });
+  rows.sort((a, b) => (b.d ? +new Date(b.d.last_seen) : 0) - (a.d ? +new Date(a.d.last_seen) : 0));
+  $("userRows").innerHTML = rows.length ? rows.map(({ l, d, n }) => {
+    const show = revealAll || revealed.has(l.key);
+    return `
+    <tr class="click" data-key="${esc(l.key)}">
+      <td><div class="who"><div class="avatar ${d ? "" : "idle"}">${initial(l.owner)}</div>
+        <div><b>${esc(l.owner || "Unknown user")}</b><span class="sub">${d ? `PC ${n} of ${l.max_devices}` : "Not activated yet"}</span></div></div></td>
+      <td class="hide-md">${d ? `<span class="mono">${esc(d.hwid)}</span><span class="sub">mod ${esc(d.mod_version || "?")}</span>` : '<span class="faint">–</span>'}</td>
+      <td class="keycell"><span class="mono ${show ? "" : "masked"}">${esc(show ? l.key : mask(l.key))}</span>
+        <button class="link" data-reveal="${esc(l.key)}">${show ? "Hide" : "Show"}</button><button class="link" data-copy="${esc(l.key)}">Copy</button></td>
+      <td class="hide-md">${pill(status(l))}</td>
+      <td class="hide-md muted">${d ? ago(d.last_seen) : "–"}</td>
+      <td class="right">${d ? `<button class="btn sm" data-free="${esc(l.key)}" data-hwid="${esc(d.hwid)}">Free slot</button>` : ""}</td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="6" class="table-empty">${licenses.length ? "Nothing matches" : "No users yet"}</td></tr>`;
+}
+
+function seg(id, set) {
+  $(id).onclick = (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    [...$(id).children].forEach((x) => x.classList.toggle("on", x === b));
+    set(b.dataset.f);
+    renderAll();
+  };
+}
+seg("keyFilter", (f) => keyFilter = f);
+seg("userFilter", (f) => userFilter = f);
+$("keySearch").oninput = renderAll;
+$("userSearch").oninput = renderAll;
+$("revealAll").onclick = () => {
+  revealAll = !revealAll;
+  revealed.clear();
+  $("revealAll").textContent = revealAll ? "Hide all keys" : "Show all keys";
+  renderAll();
+};
+
+// ------------------------------------------------------------------ detail klíče
+function openDrawer(key) {
+  const l = licenses.find((x) => x.key === key);
+  if (!l) return;
+  current = key;
+  fillDrawer(l);
+  $("drawer").classList.add("show");
+  $("scrim").classList.add("show");
+  renderAll();
+}
+function fillDrawer(l) {
+  const st = status(l);
+  $("dStatus").innerHTML = pill(st);
+  $("dKey").textContent = l.key;
+  $("dOwner").innerHTML = l.owner ? esc(l.owner) : '<span class="faint">–</span>';
+  $("dExp").textContent = expText(l);
+  $("dSlots").innerHTML = `${slots(l)} ${l.devices.length} of ${l.max_devices}`;
+  $("dCreated").textContent = fmtDate(l.created_at);
+  $("dPcs").innerHTML = l.devices.map((d, i) => `
+      <div class="pc"><div class="avatar">${i + 1}</div>
+        <div class="t"><span class="mono">${esc(d.hwid)}</span><small>last seen ${ago(d.last_seen)} · since ${fmtDate(d.first_seen)} · mod ${esc(d.mod_version || "?")}</small></div>
+        <button class="btn sm" data-free="${esc(l.key)}" data-hwid="${esc(d.hwid)}">Free</button></div>`).join("")
+    + Array.from({ length: Math.max(0, l.max_devices - l.devices.length) }, () => `<div class="pc free">Free slot</div>`).join("");
+  $("eOwner").value = l.owner || "";
+  $("eMax").value = l.max_devices;
+  $("eExp").value = l.expires_at ? l.expires_at.slice(0, 10) : "";
+  $("eNote").value = l.note || "";
+  $("dRevoke").textContent = l.revoked ? "Restore key" : "Revoke key";
+  $("dReset").disabled = !l.devices.length;
+}
+function closeAll() {
+  current = null;
+  $("drawer").classList.remove("show");
+  $("createModal").classList.remove("show");
+  $("scrim").classList.remove("show");
+  if (page === "keys") renderKeys();
+}
+$("scrim").onclick = closeAll;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
+$("dCopy").onclick = () => copy(current);
+
+async function act(promise, okText) {
+  try {
+    const r = await promise;
+    if (r.ok) toast(okText); else toast(r.message || "Failed");
+    await load();
+  } catch (e) { /* odhlášeno */ }
+}
+$("eSave").onclick = () => act(api("update", { key: current, owner: $("eOwner").value, note: $("eNote").value,
+  maxDevices: Number($("eMax").value), expiresAt: $("eExp").value || null }), "Saved");
+$("dRevoke").onclick = () => {
+  const l = licenses.find((x) => x.key === current);
+  if (!l) return;
+  if (!l.revoked && !confirm("Revoke this key? The mod stops working on its PCs at the next start.")) return;
+  act(api("update", { key: current, revoked: !l.revoked }), l.revoked ? "Key restored" : "Key revoked");
+};
+$("dReset").onclick = () => {
+  if (!confirm("Free all PCs of this key? They'll need to activate again.")) return;
+  act(api("reset", { key: current }), "PCs freed");
+};
+$("dDelete").onclick = () => {
+  if (!confirm(`Delete ${current} for good? This can't be undone.`)) return;
+  const k = current;
+  closeAll();
+  act(api("delete", { key: k }), "Key deleted");
+};
+
+// ------------------------------------------------------------------ nový klíč
+function openCreate() {
+  $("createFields").classList.remove("hidden");
+  $("createResult").classList.add("hidden");
+  $("createBtn").classList.remove("hidden");
+  $("createAnother").textContent = "Cancel";
+  $("createModal").classList.add("show");
+  $("scrim").classList.add("show");
+  setTimeout(() => $("cOwner").focus(), 50);
+}
+$("createForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const b = $("createBtn");
+  b.disabled = true;
+  b.innerHTML = '<span class="spin"></span>';
+  try {
+    const r = await api("create", {
+      owner: $("cOwner").value, maxDevices: Number($("cMax").value) || 2,
+      days: $("cDays").value === "" ? null : Number($("cDays").value),
+      count: Number($("cCount").value) || 1, note: $("cNote").value,
+    });
+    if (!r.ok) return toast(r.message || "Couldn't create");
+    $("newKeys").innerHTML = r.keys.map((k) =>
+      `<div class="newkey"><span class="mono">${esc(k)}</span><button type="button" class="btn sm" data-copy="${esc(k)}">Copy</button></div>`).join("")
+      + (r.keys.length > 1 ? `<button type="button" class="btn sm" data-copy="${esc(r.keys.join("\n"))}">Copy all ${r.keys.length}</button>` : "");
+    $("createFields").classList.add("hidden");
+    $("createResult").classList.remove("hidden");
+    b.classList.add("hidden");
+    $("createAnother").textContent = "Done";
+    $("cOwner").value = "";
+    $("cNote").value = "";
+    $("cCount").value = 1;
+    await load();
+  } catch (err) {} finally {
+    b.disabled = false;
+    b.textContent = "Create key";
+  }
+};
+
+// ------------------------------------------------------------------ kliky
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  const c = t.closest("[data-copy]");
+  if (c) { e.stopPropagation(); return copy(c.dataset.copy); }
+  const rv = t.closest("[data-reveal]");
+  if (rv) {
+    e.stopPropagation();
+    const k = rv.dataset.reveal;
+    if (revealAll) { revealAll = false; licenses.forEach((l) => revealed.add(l.key)); $("revealAll").textContent = "Show all keys"; }
+    if (revealed.has(k)) revealed.delete(k); else revealed.add(k);
+    return renderAll();
+  }
+  const fr = t.closest("[data-free]");
+  if (fr) {
+    e.stopPropagation();
+    return act(api("reset", { key: fr.dataset.free, hwid: fr.dataset.hwid }), "Slot freed");
+  }
+  if (t.closest("[data-open=create]")) return openCreate();
+  if (t.closest("[data-close]")) return closeAll();
+  const g = t.closest("[data-goto]");
+  if (g) return go(g.dataset.goto);
+  const row = t.closest("[data-key]");
+  if (row && !t.closest("button")) openDrawer(row.dataset.key);
+});
+
+if (token) showApp();
+</script>
+</body>
+</html>
